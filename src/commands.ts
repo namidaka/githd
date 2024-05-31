@@ -8,7 +8,6 @@ import { HistoryViewProvider } from './historyViewProvider';
 import { InfoViewProvider } from './infoViewProvider';
 import { GitService, GitRepo, GitRefType, GitCommittedFile } from './gitService';
 import { Tracer } from './tracer';
-import { resolve } from 'path';
 
 function toGitUri(uri: vs.Uri, ref?: string): vs.Uri {
   return uri.with({
@@ -148,7 +147,7 @@ export class CommandCenter {
     Tracer.verbose('Command: githd.viewHistory');
     const repo = await selectGitRepo(this._gitService);
     if (repo) {
-      const currentBranch = await this._gitService.getCurrentBranch(repo);
+      const currentBranch = await this._gitService.getCurrentBranch(repo) ?? 'default-branch';
       this._viewHistory({ repo, branch: currentBranch });
     }
   }
@@ -163,7 +162,7 @@ export class CommandCenter {
     if (!repo) {
       return;
     }
-    const currentBranch = await this._gitService.getCurrentBranch(repo);
+    const currentBranch = await this._gitService.getCurrentBranch(repo) ?? 'default-branch';
     return this._viewHistory({ specifiedPath, repo, branch: currentBranch });
   }
 
@@ -189,7 +188,7 @@ export class CommandCenter {
       return;
     }
     line++;
-    const currentBranch = await this._gitService.getCurrentBranch(repo);
+    const currentBranch = await this._gitService.getCurrentBranch(repo) ?? 'default-branch';
     return this._viewHistory({ specifiedPath: file, line, repo, branch: currentBranch });
   }
 
@@ -198,7 +197,7 @@ export class CommandCenter {
     Tracer.verbose('Command: githd.viewAllHistory');
     let context = this._model.historyViewContext ?? {
       repo: this._gitService.getGitRepos()[0],
-      branch: await this._gitService.getCurrentBranch(this._gitService.getGitRepos()[0])
+      branch: await this._gitService.getCurrentBranch(this._gitService.getGitRepos()[0]) ?? 'default-branch'
     };
     return this._viewHistory(context, true);
   }
@@ -376,7 +375,7 @@ export class CommandCenter {
 
   private async _viewHistory(context: HistoryViewContext, all: boolean = false): Promise<void> {
     if (!context.branch) {
-      context.branch = await this._gitService.getCurrentBranch(context.repo);
+      context.branch = await this._gitService.getCurrentBranch(context.repo) ?? 'default-branch';
     }
     this._historyView.loadAll = all;
     await this._model.setHistoryViewContext(context);
@@ -395,7 +394,7 @@ export class CommandCenter {
     const branches = await selectBranch(this._gitService, repo, true);
     const branchWithCombination = await branchCombination(this._gitService, repo);
     const items = [...branches, ...branchWithCombination];
-    const currentRef = await this._gitService.getCurrentBranch(repo);
+    const currentRef = await this._gitService.getCurrentBranch(repo) ?? 'default-branch';
     const placeHolder: string = `Select a ref to see it's diff with ${currentRef} or select two refs to see their diffs`;
     vs.window.showQuickPick(items, { placeHolder: placeHolder }).then(async item => {
       if (!item) {
