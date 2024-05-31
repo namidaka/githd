@@ -148,7 +148,8 @@ export class CommandCenter {
     Tracer.verbose('Command: githd.viewHistory');
     const repo = await selectGitRepo(this._gitService);
     if (repo) {
-      this._viewHistory({ repo, branch: '' });
+      const currentBranch = await this._gitService.getCurrentBranch(repo);
+      this._viewHistory({ repo, branch: currentBranch });
     }
   }
 
@@ -162,7 +163,8 @@ export class CommandCenter {
     if (!repo) {
       return;
     }
-    return this._viewHistory({ specifiedPath, repo, branch: '' });
+    const currentBranch = await this._gitService.getCurrentBranch(repo);
+    return this._viewHistory({ specifiedPath, repo, branch: currentBranch });
   }
 
   @command('githd.viewFolderHistory')
@@ -187,7 +189,8 @@ export class CommandCenter {
       return;
     }
     line++;
-    return this._viewHistory({ specifiedPath: file, line, repo, branch: '' });
+    const currentBranch = await this._gitService.getCurrentBranch(repo);
+    return this._viewHistory({ specifiedPath: file, line, repo, branch: currentBranch });
   }
 
   @command('githd.viewAllHistory')
@@ -195,7 +198,7 @@ export class CommandCenter {
     Tracer.verbose('Command: githd.viewAllHistory');
     let context = this._model.historyViewContext ?? {
       repo: this._gitService.getGitRepos()[0],
-      branch: ''
+      branch: await this._gitService.getCurrentBranch(this._gitService.getGitRepos()[0])
     };
     return this._viewHistory(context, true);
   }
@@ -372,6 +375,9 @@ export class CommandCenter {
   }
 
   private async _viewHistory(context: HistoryViewContext, all: boolean = false): Promise<void> {
+    if (!context.branch) {
+      context.branch = await this._gitService.getCurrentBranch(context.repo);
+    }
     this._historyView.loadAll = all;
     await this._model.setHistoryViewContext(context);
   }
